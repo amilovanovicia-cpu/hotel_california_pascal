@@ -1,0 +1,83 @@
+1
+Deluxe Suite
+3
+45
+yes
+120
+
+2
+Standard Twin
+2
+28
+no
+70
+
+3
+Economy Single
+1
+18
+no
+40
+
+4
+Family Room
+4
+55
+yes
+150
+
+5
+Panorama King
+2
+35
+yes
+100
+
+6
+Business Suite
+2
+30
+no
+90
+
+7
+Royal Apartment
+4
+60
+yes
+200
+
+8
+Cozy Double
+2
+22
+no
+65
+
+9
+Luxury Spa Suite
+3
+50
+yes
+180
+
+10
+Compact Single
+1
+16
+no
+35
+
+11
+Garden View Room
+2
+26
+yes
+85
+
+12
+Penthouse Elite
+3
+70
+yes
+250
