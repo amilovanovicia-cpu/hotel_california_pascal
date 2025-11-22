@@ -187,7 +187,7 @@ procedure Filter(var roomsArray: TRoomArray; numberOfRooms: Integer);
                 case menuKey of
                     '1': UniversalFilter(roomsArray, numberOfRooms, 1); 
                     '2': UniversalFilter(roomsArray, numberOfRooms, 2); 
-                    '3': UniversalFilter(roomsArray, numberOfRooms, 3);
+                    '3': WriteLn('Proba');
                     '4': WriteLn('Proba'); 
                 end;
 
