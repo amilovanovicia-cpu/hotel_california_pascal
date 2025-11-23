@@ -1,6 +1,6 @@
 type
 TRoom = record
-    Id: String;
+    Id: Integer;
     Name: String;
     NumberOfBeds: Integer;
     Area: Byte;
@@ -19,3 +19,4 @@ TReservation = record
 end;
 
 TRoomArray = array[1..12] of TRoom;
+TReservationArray = array[1..100] of TReservation;

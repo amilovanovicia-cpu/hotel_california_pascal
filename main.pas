@@ -6,9 +6,10 @@ Crt, SysUtils, DateUtils;
 {$i data.pas}
 
 var
-  rooms: TRoomArray;
-  numberOfRooms: Integer;
-  menuKey: Char;
+  rooms:          TRoomArray;
+  reservations:   TReservationArray;
+  numberOfRooms, numberOfReservations: Integer;
+  menuKey:        Char;
 
 {Ucitavanje funkcija}
 {$i logic.pas}
@@ -19,25 +20,31 @@ begin
   try
     {*** POCETAK APLIKACIJE ***}
     {Ucitavanje svih soba u rooms niz}
-    numberOfRooms := ReadStringArray('hotel_rooms.txt', rooms);
-
+    numberOfRooms         := ReadRooms('hotel_rooms.txt', rooms);
+    numberOfReservations  := ReadReservations('reservations.txt', reservations);
+    
+    {Provera izlistavanja rezervacija}
+    // WriteLn(numberOfReservations);
     {Provera izlistavanje broja soba}
-    // WriteLn(numberOfRooms); {Vraca 13 proveri - Oduzeo 1}
+    // WriteLn(numberOfRooms); 
 
     {Glavni Menu - Izlistavanje opcija}
     repeat
-      ClrScr;
+      // ClrScr;
 
       WriteLn('****************************************');
       WriteLn('**********  HOTEL CALIFORNIA  **********');
       WriteLn('****************************************');
-      WriteLn('1) Sortiraj');
-      WriteLn('2) Filteri');
+      WriteLn('1) Sort Opcija');
+      WriteLn('2) Filter Opcija');
       WriteLn('3) Izlistaj sve sobe');
       WriteLn('e) Pritisni "e" za izlazak iz aplikacije');
 
-      {Odabir opcije - Korisnik mora da pritisne 1, 2 ili 3}
-      menuKey := ReadKey;
+      {Odabir opcije - Korisnik mora da pritisne 1, 2, 3 ili "e" za izlazak}
+      TextColor(Green);
+      WriteLn('---------------------------------------');
+      Write('Izaberite opciju pritiskom na taster: '); menuKey := ReadKey;
+      TextColor(White);
 
       {Na osnovu odabira vodimo korisnika na podmenije}
       case menuKey of
