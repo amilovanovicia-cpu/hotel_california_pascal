@@ -12,7 +12,7 @@ TReservation = record
     JMBG: string;
     Name: string;
     Surname: string;
-    RoomNumber: Integer;
+    RoomId: Integer;
     CheckIn: string;   // YYYY-MM-DD
     CheckOut: string;  // YYYY-MM-DD
     TotalPrice: Real;
