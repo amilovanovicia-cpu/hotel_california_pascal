@@ -18,5 +18,11 @@ TReservation = record
     TotalPrice: Real;
 end;
 
+TDateHelper = record
+    fromDate: TDateTime;
+    toDate:   TDateTime;
+end;
+
 TRoomArray = array[1..12] of TRoom;
 TReservationArray = array[1..100] of TReservation;
+TReservationDateArray = array[1..100] of TDateHelper;

@@ -48,7 +48,7 @@ begin
 
       {Na osnovu odabira vodimo korisnika na podmenije}
       case menuKey of
-        '1': Sort(rooms, numberOfRooms);    
+        '1': Sort(rooms, numberOfRooms, reservations, numberOfReservations);    
         '2': Filter(rooms, numberOfRooms, reservations, numberOfReservations);
         '3': RenderAllRooms(rooms, numberOfRooms);
       end;

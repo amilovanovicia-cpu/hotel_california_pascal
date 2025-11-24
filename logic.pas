@@ -95,7 +95,25 @@ end;
 {Pomocna funkcija koja renderuje samo jednu sobu}
 procedure RenderRoom(room: TRoom);
     begin;
-        WriteLn('****************************************');
+        WriteLn('**************************************************************');
+        TextColor(Blue); 
+        WriteLn(UpCase(room.Name));
+        TextColor(White);
+        Write('Broj kreveta: ', room.NumberOfBeds, ' | ');
+        Write('Povrsina: ', room.Area, ' | ');
+        if room.Balcony = 'yes' then Write('Balkon: Da') 
+        else Write('Balkon: Ne');
+        WriteLn('Cena: $',room.PricePN, ' po danu.');
+        
+        WriteLn('--------------------------------------------------------------');
+        WriteLn('ID sobe: ', room.ID);
+        delay(100);
+    end;
+
+{Pomocna funkcija koja renderuje samo jednu sobu}
+procedure RenderRoomBig(room: TRoom);
+    begin;
+       WriteLn('****************************************');
         TextColor(Blue);
         WriteLn(UpCase(room.Name));
         TextColor(White);
@@ -108,7 +126,6 @@ procedure RenderRoom(room: TRoom);
         WriteLn('---------------------------------------');
         WriteLn('ID sobe: ', room.ID);
         WriteLn('---------------------------------------');
-        delay(100);
     end;
 
 {Funkcija za rezervaciju}
@@ -119,44 +136,105 @@ procedure RenderRoom(room: TRoom);
 function Reserve(roomID: Integer; room:TRoom; var reservations: TReservationArray; numberOfReservations: Integer):Integer;
 var
     i, j: Integer;
+    howManyReservations: Integer;
+    y,m,d: Word;
+    reservationDates: TReservationDateArray;
+    startDate: String;
+    endDate: String;
+    userTempTDateTime: TDateTime;
 begin 
     ClrScr;
-    WriteLn('izabrali ste ovu sobu za rezervaciju: ID: ', roomID);
-    WriteLn('-------------------------------------------');
-    RenderRoom(room);
+    {Proveravamo koliko rezervacija imamo za sobu koju je korisnik uneo}
+    howManyReservations := 0;
+    RenderRoomBig(room);
     
     for i:= 1 to numberOfReservations do
         begin
             if (reservations[i].RoomId = roomID) then
                 begin
-                    WriteLn(reservations[i].CheckIn, ' - ', reservations[i].CheckOut);
+                    {Ako ovde imamo rezervaciju ovaj counter uvecavamo za jedan}
+                    howManyReservations := howManyReservations + 1;
+
+                    {Kada udjemo u ovaj if statement imamo rezervaciju, na prvom prolazu for loop-a, ispisujemo poruku "Rezervacije"}
+
+                    if (howManyReservations = 1) then
+                        begin
+                            TextColor(Red);
+                            WriteLn('REZERVACIJE');
+                        end;
+
+                    {Parsiramo i smestamo u rekord dan pocetka rezervacije}
+                    y := StrToInt(Copy(reservations[i].CheckIn, 1, 4));
+                    m := StrToInt(Copy(reservations[i].CheckIn, 6, 2));
+                    d := StrToInt(Copy(reservations[i].CheckIn, 9, 2));
+                    reservationDates[howManyReservations].fromDate := EncodeDate(y, m, d);
+                    {Parsiramo i smestamo u rekord dan kraja rezervacije}
+                    y := StrToInt(Copy(reservations[i].CheckOut, 1, 4));
+                    m := StrToInt(Copy(reservations[i].CheckOut, 6, 2));
+                    d := StrToInt(Copy(reservations[i].CheckOut, 9, 2));
+                    reservationDates[howManyReservations].toDate := EncodeDate(y, m, d);
+
+                    TextColor(Red);
+                    WriteLn('---------------------------------------');
+                    WriteLn('Od: ', reservations[i].CheckIn, ' Do: ', reservations[i].CheckOut);
+                    WriteLn('---------------------------------------');
+                    TextColor(White);
                 end;
         end;
+    
+    if (howManyReservations = 0) then
+        begin
+            TextColor(Red);
+            WriteLn('SOBA NEMA REZERVACIJA');
+            WriteLn('---------------------------------------');
+            TextColor(White);
+        end;
+    
+    {Upit za korisnika od kada do kada zeli rezervaciju}
+    Write('Unesite datum pocetka rezervacije (YYYY-MM-DD): ');ReadLn(startDate);
+    Write('Unesite datum kraja rezervacije (YYYY-MM-DD): ');ReadLn(endDate);
 
+    {Parsiranje i Poredjenje korisnikovih datuma sa postojecim rezervacijama}
+
+    y := StrToInt(Copy(reservations[i].CheckIn, 1, 4));
+    m := StrToInt(Copy(reservations[i].CheckIn, 6, 2));
+    d := StrToInt(Copy(reservations[i].CheckIn, 9, 2));
+
+    userTempTDateTime := EncodeDate(y, m, d);
+    WriteLn(userTempTDateTime:0:4);
+    WriteLn(reservationDates[1].fromDate:0:4);
     ReadLn;
 end;
 
 {********** MILOS SAVKOVIC **********}
 {Ovde sam ti napravio ovu Universal Filter proceduru }
 {Radi po istom principu kao i filter funkcija}
-procedure UniversalSort(var roomsArray: TRoomArray; numberOfRooms: Integer; sortType: Integer);
+procedure UniversalSort(var roomsArray: TRoomArray; numberOfRooms: Integer; sortType: Integer; var reservationsArray: TReservationArray; numberOfReservations: Integer);
 var
   i: Integer;
+  roomID: Integer;
 begin
   QuickSort(roomsArray, 1, numberOfRooms, sortType);
  
   //ClrScr;
-  WriteLn('*** SORTIRANE SOBE ***');
-  WriteLn;
+//   WriteLn('*** SORTIRANE SOBE ***');
+//   WriteLn;
  
   for i := 1 to numberOfRooms do
     RenderRoom(roomsArray[i]);
+
+    TextColor(Green);
+    Write('Izaberite ID sobe zelite da rezervisete: '); ReadLn(roomID);
+    TextColor(White);
+
+    {Rezervacija Selektovane sobe}
+    Reserve(roomID, roomsArray[roomID], reservationsArray, numberOfReservations);
  
-  WriteLn;
-  TextColor(Green);
-  WriteLn('Pritisni bilo koji taster za povratak u meni...');
-  TextColor(White);
- 
+//   WriteLn;
+//   TextColor(Green);
+//   WriteLn('Pritisni bilo koji taster za povratak u meni...');
+//   TextColor(White);
+  WriteLn('Press <Enter> to exit');
   ReadKey;
 end;
 
@@ -166,7 +244,7 @@ end;
 {2) Povrsina }
 {3) Cena}
 {4) Postojanje balkona}
-procedure Sort(var roomsArray: TRoomArray; numberOfRooms: Integer);
+procedure Sort(var roomsArray: TRoomArray; numberOfRooms: Integer; var reservationsArray: TReservationArray; numberOfReservations: Integer);
 var
     menuKey: Char;
 begin
@@ -188,10 +266,10 @@ begin
         TextColor(White);
  
         case menuKey of
-            '1': UniversalSort(roomsArray, numberOfRooms, 1);
-            '2': UniversalSort(roomsArray, numberOfRooms, 2);
-            '3': UniversalSort(roomsArray, numberOfRooms, 3);
-            '4': UniversalSort(roomsArray, numberOfRooms, 4);
+            '1': UniversalSort(roomsArray, numberOfRooms, 1, reservationsArray, numberOfReservations);
+            '2': UniversalSort(roomsArray, numberOfRooms, 2, reservationsArray, numberOfReservations);
+            '3': UniversalSort(roomsArray, numberOfRooms, 3, reservationsArray, numberOfReservations);
+            '4': UniversalSort(roomsArray, numberOfRooms, 4, reservationsArray, numberOfReservations);
         end;
  
     until (menuKey = 'e');
@@ -215,11 +293,9 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
             {Broj Soba Filter}
             1:  begin
                     ClrScr;
-                    Write('Unesite broj kreveta: ');ReadLn(userOption);
 
-                    {Poruka koliko je korisnik izabrao soba}
                     TextColor(Red);
-                    WriteLn('Izabrani broj kreveta: ', userOption);
+                    Write('Unesite broj kreveta: ');ReadLn(userOption);
                     TextColor(White);
 
                     {Filter za pronalazak soba}
@@ -245,11 +321,8 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
             {Ovde filtriramo do odredjene povrsine, trazimo sobe koje su manje ili jednake od korisnikovog unosa}
             2:  begin
                     ClrScr;
-                    Write('Unesite maksimalnu povrsinu: ');ReadLn(userOption);
-
-                    {Poruka o maksimalnoj povrsini koju je korisnik izabrao}
                     TextColor(Red);
-                    WriteLn('Izabrana maksimalna povrsina: ', userOption, 'm2');
+                    Write('Unesite maksimalnu povrsinu: ');ReadLn(userOption);
                     TextColor(White);
 
                     {Filter za pronalazak soba do povrsine koje je korisnik uneo}
@@ -275,11 +348,8 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
             {Ovde filtriramo sve sobe do cene koju je korisnik uneo}
             3:  begin
                     ClrScr;
-                    Write('Maksimalna cena: ');ReadLn(userOption);
-
-                    {Poruka o maksimalnoj ceni koju je korisnik uneo}
                     TextColor(Red);
-                    WriteLn('Izabrana maksimalna cena sobe: $', userOption);
+                    Write('Maksimalna cena: ');ReadLn(userOption);
                     TextColor(White);
 
                     {Filter za pronalazak soba do povrsine koje je korisnik uneo}
@@ -306,7 +376,9 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
             4:  begin
                     ClrScr;
                     repeat
+                        TextColor(Red);
                         Write('Balkon Y/N. Pritisni "E" za izlazak? ');ReadLn(userOptionString);
+                        TextColor(White);
                     until ((LowerCase(userOptionString[1]) = 'y') OR (LowerCase(userOptionString[1]) = 'n') OR (LowerCase(userOptionString[1]) = 'e'));
 
                     if LowerCase(userOptionString) = 'e' then exit;
@@ -379,10 +451,10 @@ procedure Filter(var roomsArray: TRoomArray; numberOfRooms: Integer; var reserva
             TextColor(White);
 
                 case menuKey of
-                    '1': UniversalFilter(roomsArray, numberOfRooms, 1, reservations, numberOfReservations); 
-                    '2': UniversalFilter(roomsArray, numberOfRooms, 2, reservations, numberOfReservations); 
-                    '3': UniversalFilter(roomsArray, numberOfRooms, 3, reservations, numberOfReservations);
-                    '4': UniversalFilter(roomsArray, numberOfRooms, 4, reservations, numberOfReservations);
+                    '1': UniversalFilter(roomsArray, numberOfRooms, 1, reservationsArray, numberOfReservations); 
+                    '2': UniversalFilter(roomsArray, numberOfRooms, 2, reservationsArray, numberOfReservations); 
+                    '3': UniversalFilter(roomsArray, numberOfRooms, 3, reservationsArray, numberOfReservations);
+                    '4': UniversalFilter(roomsArray, numberOfRooms, 4, reservationsArray, numberOfReservations);
                 end;
             
         until (menuKey = 'e');
