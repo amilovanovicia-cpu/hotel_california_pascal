@@ -1,8 +1,8 @@
-{$MODE OBJFPC}
+{$mode objfpc}{$H+}
 program Hotel;
 
 uses
-Crt, SysUtils, DateUtils;
+Crt, SysUtils, DateUtils, Windows;
 {$i data.pas}
 
 var
@@ -10,6 +10,9 @@ var
   reservations:   TReservationArray;
   numberOfRooms, numberOfReservations: Integer;
   menuKey:        Char;
+  Freq: Int64;
+  StartC, EndC: Int64;
+  ElapsedMicro: Double;
 
 {Ucitavanje funkcija}
 {$i logic.pas}
@@ -54,7 +57,6 @@ begin
       end;
     until (menuKey = 'e');
   {*** KRAJ APLIKACIJE ***}
-
   except
     on E: EInOutError do
     begin
