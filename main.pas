@@ -26,6 +26,7 @@ begin
     numberOfRooms         := ReadRooms('hotel_rooms.txt', rooms);
     numberOfReservations  := ReadReservations('reservations.txt', reservations);
     
+    
     {Provera izlistavanja rezervacija}
     // WriteLn(numberOfReservations);
     {Provera izlistavanje broja soba}
@@ -35,25 +36,28 @@ begin
     repeat
       // ClrScr;
 
-      WriteLn('****************************************');
-      WriteLn('**********  HOTEL CALIFORNIA  **********');
-      WriteLn('****************************************');
-      WriteLn('1) Sort Opcija');
-      WriteLn('2) Filter Opcija');
-      WriteLn('3) Izlistaj sve sobe');
-      WriteLn('e) Pritisni "e" za izlazak iz aplikacije');
+      WriteLn('==============================================');
+      WriteLn('                HOTEL CALIFORNIA              ');
+      WriteLn('==============================================');
+      WriteLn(' 1) Search Rooms');
+      WriteLn(' 2) Sorting Options');
+      WriteLn(' 3) Filter Options');
+      WriteLn(' 4) List All Rooms');
+      WriteLn('----------------------------------------------');
+      WriteLn(' e) Exit');
 
       {Odabir opcije - Korisnik mora da pritisne 1, 2, 3 ili "e" za izlazak}
       TextColor(Green);
-      WriteLn('---------------------------------------');
-      Write('Izaberite opciju pritiskom na taster: '); menuKey := ReadKey;
+      WriteLn('----------------------------------------------');
+      Write('Press the corresponding key to select an option: '); ReadLn(menuKey);
       TextColor(White);
 
       {Na osnovu odabira vodimo korisnika na podmenije}
       case menuKey of
-        '1': Sort(rooms, numberOfRooms, reservations, numberOfReservations);    
-        '2': Filter(rooms, numberOfRooms, reservations, numberOfReservations);
-        '3': RenderAllRooms(rooms, numberOfRooms);
+        '1': SearchRooms(rooms, numberOfRooms, reservations, numberOfReservations);
+        '2': Sort(rooms, numberOfRooms, reservations, numberOfReservations);    
+        '3': Filter(rooms, numberOfRooms, reservations, numberOfReservations);
+        '4': RenderAllRooms(rooms, numberOfRooms);
       end;
     until (menuKey = 'e');
   {*** KRAJ APLIKACIJE ***}
