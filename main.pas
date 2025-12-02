@@ -42,7 +42,7 @@ begin
       WriteLn(' 1) Search Rooms');
       WriteLn(' 2) Sorting Options');
       WriteLn(' 3) Filter Options');
-      WriteLn(' 4) List All Rooms');
+      WriteLn(' 4) Search Reservations by ID');
       WriteLn('----------------------------------------------');
       WriteLn(' e) Exit');
 
@@ -57,7 +57,7 @@ begin
         '1': SearchRooms(rooms, numberOfRooms, reservations, numberOfReservations);
         '2': Sort(rooms, numberOfRooms, reservations, numberOfReservations);    
         '3': Filter(rooms, numberOfRooms, reservations, numberOfReservations);
-        '4': RenderAllRooms(rooms, numberOfRooms);
+        '4': SearchReservations(rooms, numberOfRooms, reservations, numberOfReservations);
       end;
     until (menuKey = 'e');
   {*** KRAJ APLIKACIJE ***}
@@ -65,13 +65,12 @@ begin
     on E: EInOutError do
     begin
       WriteLn('Moramo prekinuti rad.');
-      WriteLn('Greška pri čitanju datoteke.');
+      WriteLn('Greska pri citanju datoteke.');
     end;
 
     on E: Exception do
     begin
       WriteLn('Moramo prekinuti rad.');
-      WriteLn('Poruka: ', E.Message);
     end;
   end;
 end.

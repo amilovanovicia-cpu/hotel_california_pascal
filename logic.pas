@@ -23,6 +23,7 @@ function ReadRooms(DatName: String; var rooms: TRoomArray): Integer;
         {Razlog, counter na poslednjem true uslovu se ipak povecava}
         {I poslednji counter je zapravo false}
         ReadRooms := recordCounter - 1;
+        close(Dat);
     end;
 
 function ReadReservations(DatName: String; var reservations: TReservationArray): Integer;
@@ -51,6 +52,7 @@ function ReadReservations(DatName: String; var reservations: TReservationArray):
         {Razlog, counter na poslednjem true uslovu se ipak povecava}
         {I poslednji counter je zapravo false}
         ReadReservations := recordCounter-1;
+        close(Dat);
     end;
 
 {Header UI}
@@ -166,25 +168,12 @@ end;
 {Pomocna funkcija koja renderuje samo jednu sobu}
 procedure RenderRoomBig(room: TRoom);
 begin
+    {Umesto moje funkcije za renderovanje, pozvao sam Miloseve za render, zauzimaju manje prostora}
+    RenderRoomTableHeader;
+    RenderRoomTable(room);
+    TextColor(LightCyan);
+    WriteLn('---------------------------------------------------------------------------------------');
     TextColor(White);
-    WriteLn('+==========================================+');
-
-    TextColor(LightBlue);
-    WriteLn('| ', CenterStr(UpCase(room.Name), 38), '  |');
-    TextColor(White);
-
-    WriteLn('+------------------------------------------+');
-    WriteLn('| Broj kreveta : ', room.NumberOfBeds:2, '                       |');
-    WriteLn('| Povrsina     : ', room.Area:3, ' m2                   |');
-
-    if room.Balcony = 'yes' 
-        then WriteLn('| Balkon       : Da                       |')
-        else WriteLn('| Balkon       : Ne                       |');
-
-    WriteLn('| Cena         : $', room.PricePN:0, ' po danu             |');
-    WriteLn('+------------------------------------------+');
-    WriteLn('| ID sobe      : ', room.ID:4, '                     |');
-    WriteLn('+==========================================+');
 end;
 
 {Funkcija za rezervaciju}
@@ -212,9 +201,15 @@ var
     InputDateTo:String;
     TotalPrice: Real;
     ReserveRecordTemp: TReservation;
+    Dat: Text;
 
 begin 
     ClrScr;
+    {Apdejtovanje svih rezervacija}
+    AssignFile(Dat, 'reservations.txt');
+    Reset(Dat);
+    numberOfReservations := ReadReservations('reservations.txt', reservations);
+    CloseFile(Dat);
     {Proveravamo koliko rezervacija imamo za sobu koju je korisnik uneo}
     howManyReservations := 0;
     errorCounter := 0;
@@ -235,7 +230,7 @@ begin
                     if (howManyReservations = 1) then
                         begin
                             TextColor(Red);
-                            WriteLn('REZERVACIJE');
+                            WriteLn('RESERVATIONS');
                         end;
 
                     {Parsiramo i smestamo u rekord dan pocetka rezervacije}
@@ -263,7 +258,7 @@ begin
         begin
             TextColor(LightRed);
             WriteLn('+==========================================+');
-            WriteLn('|           SOBA NEMA REZERVACIJA          |');
+            WriteLn('|      ROOM DOESN''T HAVE RESERVATIONS     |');
             WriteLn('+==========================================+');
             TextColor(White);
         end;
@@ -273,7 +268,7 @@ begin
     repeat
         {Unos podataka o pocetku rezervacije - Proveravamo repeat petljom i da li je datum pre danasnjeg}
         repeat
-            Write('Unesite datum pocetka rezervacije (YYYY-MM-DD): '); ReadLn(startDate);
+            Write('Enter the start date for your reservation (YYYY-MM-DD): '); ReadLn(startDate);
             {Parsiranje i Poredjenje korisnikovih datuma sa postojecim rezervacijama}
             y := StrToInt(Copy(startDate, 1, 4));
             m := StrToInt(Copy(startDate, 6, 2));
@@ -281,19 +276,19 @@ begin
             userTempTDateTimeFrom := EncodeDate(y, m, d);   
             if (userTempTDateTimeFrom < now) then 
                 begin 
-                    WriteLn('Ne mozete izabrati datum pocetka rezervacije pre danasnjeg dana. Molimo Vas da unesete datume ponovo.')
+                    WriteLn('The reservation start date cannot be earlier than today. Please enter the dates again.')
                 end;
         until (userTempTDateTimeFrom > now);
 
         {Unos podataka o kraju rezervacije}
-        Write('Unesite datum kraja rezervacije (YYYY-MM-DD): ');ReadLn(endDate);
+        Write('Enter the end date for your reservation (YYYY-MM-DD): ');ReadLn(endDate);
         y := StrToInt(Copy(endDate, 1, 4));
         m := StrToInt(Copy(endDate, 6, 2));
         d := StrToInt(Copy(endDate, 9, 2));
         userTempTDateTimeTo := EncodeDate(y, m, d);
         
         if (userTempTDateTimeFrom >= userTempTDateTimeTo) then 
-            WriteLn('Ne mozete uneti datum kraja rezervacije koji je pre pocetka rezervacije. Molimo Vas da uneste datume ponovo:');
+            WriteLn('The reservation end date cannot be earlier than the start date. Please re-enter the dates:');
 
     until (userTempTDateTimeFrom < userTempTDateTimeTo);
 
@@ -308,14 +303,17 @@ begin
     {Ako postoji greska}
     if errorCounter > 0 then
         begin 
-            WriteLn('Ne mozete rezervisati sobu u zeljenom periodu.');
-            WriteLn('Pritisnite <Enter> Da se vratite korak nazad.');
+            WriteLn('The room is not available for the selected time period.');
+            WriteLn('Press <Enter> to return to the previous menu.'); ReadKey;
+            writeln('Returning to previous menu...');
+            delay(1000);
+            exit;
         end
     else
         begin
-            Write('Unesite JMBG: ');ReadLn(JMBG);
-            Write('Unesite ime: ');ReadLn(FirstName);
-            Write('Unesite prezime: ');ReadLn(LastName);
+            Write('Enter your Personal ID number:');ReadLn(JMBG);
+            Write('Enter your first name: ');ReadLn(FirstName);
+            Write('Enter your last name: ');ReadLn(LastName);
             {startDate}
             {endDate}
 
@@ -333,17 +331,28 @@ begin
             ReserveRecordTemp.CheckOut := InputDateTo;
             ReserveRecordTemp.TotalPrice := room.PricePN * DaysBetween(userTempTDateTimeFrom, userTempTDateTimeTo);
 
-            reservations[numberOfReservations + 1] := ReserveRecordTemp;
-            writeln('Ukupno za placanje: $', ReserveRecordTemp.TotalPrice:0:2);
-            WriteLn('Rezervacija uspesno dodata');
-            
-        end;
+            AssignFile(Dat, 'reservations.txt');
+            Append(Dat);
 
-        {OVDE RADIM UNOS U FAJL}
+            WriteLn(Dat, ReserveRecordTemp.JMBG);
+            WriteLn(Dat, ReserveRecordTemp.Name);
+            WriteLn(Dat, ReserveRecordTemp.Surname);
+            WriteLn(Dat, ReserveRecordTemp.RoomId);
+            WriteLn(Dat, startDate);
+            WriteLn(Dat, endDate);
+            WriteLn(Dat, ReserveRecordTemp.TotalPrice:0:2);
+            writeln(Dat);
+            CloseFile(Dat);
+            TextColor(Green);
+            writeln('You have successfully reserved the room ', room.Name, ' from ', startDate, ' to ', endDate, '. Total price is $', ReserveRecordTemp.TotalPrice:0:2);
+            TextColor(White);
+            end;
+            writeln('Press <Enter> to return to the previous menu.');
+            ReadKey;
+            ClrScr;
+            exit;
+    end;
 
-        {OVDE KRAJ}
-        writeln('Pritisni < Enter > da bi se vratio u prethodni meni');
-end;
 
 {********** MILOS SAVKOVIC **********}
 {Ovde sam ti napravio ovu Universal Filter proceduru }
@@ -384,7 +393,7 @@ procedure UniversalSort(var roomsArray: TRoomArray; numberOfRooms: Integer; sort
         WriteLn('---------------------------------------------------------------------------------------');
         {izračunavanje vremena u mikrosekundama}
         ElapsedMicro := (EndC - StartC) * 1e6 / Freq;
-        writeln('Proteklo vreme sortiranja: ', ElapsedMicro:0:2, ' mikrosekundi');
+        writeln('Sorting time: ', ElapsedMicro:0:2, ' microseconds');
 
         TextColor(Green);
         WriteLn('---------------------------------------------------------------------------------------');
@@ -394,7 +403,7 @@ procedure UniversalSort(var roomsArray: TRoomArray; numberOfRooms: Integer; sort
         if LowerCase(RoomID) = 'e' then
             begin
                 writeln('Returning to previous menu...');
-                delay(1500);
+                delay(1000);
                 exit;
             end;
         TextColor(White);
@@ -495,7 +504,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                     WriteLn('---------------------------------------------------------------------------------------');
                     {izračunavanje vremena u mikrosekundama}
                     ElapsedMicro := (EndC - StartC) * 1e6 / Freq;
-                    writeln('Sorting time: ', ElapsedMicro:0:2, ' microseconds');  
+                    writeln('Sorting duration: ', ElapsedMicro:0:2, ' microseconds');  
 
                     if counter > 0 then
                         begin
@@ -507,7 +516,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                             if LowerCase(RoomID) = 'e' then
                                 begin
                                     writeln('Returning to previous menu...');
-                                    delay(1500);
+                                    delay(1000);
                                     exit;
                                 end;
                             TextColor(White);
@@ -561,7 +570,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                     WriteLn('---------------------------------------------------------------------------------------');
                     {izračunavanje vremena u mikrosekundama}
                     ElapsedMicro := (EndC - StartC) * 1e6 / Freq;
-                    writeln('Proteklo vreme sortiranja: ', ElapsedMicro:0:2, ' mikrosekundi');
+                    writeln('Sorting duration: ', ElapsedMicro:0:2, ' microseconds');
 
                     if counter > 0 then
                         begin
@@ -572,8 +581,9 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                             textColor(White);
                             if LowerCase(RoomID) = 'e' then
                                 begin
+                                    writeln;
                                     writeln('Returning to previous menu...');
-                                    delay(1500);
+                                    delay(1000);
                                     exit;
                                 end;
                             TextColor(White);
@@ -586,7 +596,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                             TextColor(LightRed);
                             WriteLn('---------------------------------------------------------------------------------------');
                             WriteLn('There are no rooms matching your criteria.');
-                            write('Press <Enter> to return to the previous menu.');
+                            writeln('Press <Enter> to return to the previous menu.');
                             TextColor(White);
                             ReadKey;
                         end;
@@ -626,7 +636,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                     WriteLn('---------------------------------------------------------------------------------------');
                     {izračunavanje vremena u mikrosekundama}
                     ElapsedMicro := (EndC - StartC) * 1e6 / Freq;
-                    writeln('Proteklo vreme sortiranja: ', ElapsedMicro:0:2, ' mikrosekundi');
+                    writeln('Sorting duration: ', ElapsedMicro:0:2, ' mikrosekundi');
 
                     if counter > 0 then
                         begin
@@ -638,7 +648,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                             if LowerCase(RoomID) = 'e' then
                                 begin
                                     writeln('Returning to previous menu...');
-                                    delay(1500);
+                                    delay(1000);
                                     exit;
                                 end;
                             TextColor(White);
@@ -662,7 +672,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                     ClrScr;
                     repeat
                         TextColor(Red);
-                        Write('Balkon Y/N. Pritisni "E" za izlazak? ');ReadLn(userOptionString);
+                        Write('Balcony (Y/N). This field is required. Press "E" to exit. ');ReadLn(userOptionString);
                         TextColor(White);
                     until ((LowerCase(userOptionString[1]) = 'y') OR (LowerCase(userOptionString[1]) = 'n') OR (LowerCase(userOptionString[1]) = 'e'));
 
@@ -705,8 +715,9 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
                     textColor(White);
                     if LowerCase(RoomID) = 'e' then
                         begin
+                            writeln;
                             writeln('Returning to previous menu...');
-                            delay(1500);
+                            delay(1000);
                             exit;
                         end;
                     TextColor(White);
@@ -742,7 +753,7 @@ procedure Filter(var roomsArray: TRoomArray; numberOfRooms: Integer; var reserva
             WriteLn('2) By minimum room area');
             WriteLn('3) By minimum price');
             WriteLn('4) By balcony availability');
-            WriteLn('e) Press "e" to exit filter options');
+            WriteLn('e) Press "E" to exit filter options');
 
             {Option selection - User must press 1, 2, 3, 4 or "e" to exit}
             TextColor(Green);
@@ -766,64 +777,213 @@ procedure Filter(var roomsArray: TRoomArray; numberOfRooms: Integer; var reserva
     end;
 
 
-function RenderAllRooms(roomsArray: TRoomArray; numberOfRooms: Integer):TRoomArray;
+function SearchReservations(roomsArray: TRoomArray; numberOfRooms: Integer; var reservationsArray: TReservationArray; numberOfReservations: Integer):TRoomArray;
+var
+    personalID: String;
+    i: Integer;
+    ID: Char;
+    IDInt: Integer;
+    error: Integer;
+    ReservationsToDelete: TReservationArray;
+    ReservationsToCancel: TReservationArray;
 begin
+    error := 0;
     ClrScr;
-    WriteLn('Render All Rooms');
-    RenderAllRooms := roomsArray;
-    ReadKey;
+    WriteLn('Please enter your Personal ID number: ');ReadLn(personalID);
+    ClrScr;
+    WriteLn('*** RESERVATIONS ***');
+    textColor(LightCyan);
+    WriteLn('---------------------------------------------------------------------------------------------');
+    for i := 1 to numberOfRooms do
+        begin
+            if reservationsArray[i].JMBG = personalID then
+                begin
+                    writeln('Room ID: ', reservationsArray[i].RoomId, ' | Name: ', reservationsArray[i].Name ,' | Check-In: ', reservationsArray[i].CheckIn, ' | Check-Out: ', reservationsArray[i].CheckOut, ' | Total Price: $', reservationsArray[i].TotalPrice:0:2);
+                    WriteLn('---------------------------------------------------------------------------------------------');
+                end;
+        end;
+    textColor(White);
+    TextColor(Green);
+    Write('Select ID of the reservation you want to cancel the reservation for, or "E" to go back to the previous menu: ');
+    textColor(White);
+    ReadLn(ID);
+
+    
+    if LowerCase(ID) = 'e' then
+        begin
+            writeln('Returning to previous menu...');
+            delay(1000);
+            ClrScr;
+            exit;
+        end;
+
+    {Brisanje rezervacije}
+    val(ID, IDInt, error);
+
+    while error <> 0 do
+        begin
+            write('Select ID of the reservation you want to cancel the reservation for');ReadLn(ID);
+        end;
+
+    for i := 1 to numberOfReservations do
+        begin
+            if (reservationsArray[i].RoomId = IDInt) AND (reservationsArray[i].JMBG = personalID) then
+                begin
+                    writeln('You have successfully canceled your reservation for room ID ', reservationsArray[i].RoomId, ' from ', reservationsArray[i].CheckIn, ' to ', reservationsArray[i].CheckOut, '.');
+                end;
+        end;
+
+  
 end;
 
-procedure SearchRooms(var roomsArray: TRoomArray; numberOfRooms: Integer; var reservationsArray: TReservationArray; numberOfReservations: Integer);
-    var
-        y,m,d: Word;
-        userTempTDateTimeFrom: TDateTime;
-        userTempTDateTimeTo: TDateTime;
-        startDate, endDate: String;
-        guestsUI: String;
-        numberOfGuests, error: Integer; 
-        roomsTemp: TRoomArray;
-    begin 
-        ClrScr;
-        repeat
-            {Unos podataka o pocetku rezervacije - Proveravamo repeat petljom i da li je datum pre danasnjeg}
-            repeat
-                Write('Enter the reservation start date (YYYY-MM-DD): '); ReadLn(startDate);
-                {Parsiranje i Poredjenje korisnikovih datuma sa postojecim rezervacijama}
-                y := StrToInt(Copy(startDate, 1, 4));
-                m := StrToInt(Copy(startDate, 6, 2));
-                d := StrToInt(Copy(startDate, 9, 2));
-                userTempTDateTimeFrom := EncodeDate(y, m, d);   
-                if (userTempTDateTimeFrom < now) then 
-                    begin 
-                         WriteLn('You cannot choose a reservation start date earlier than today. Please enter the dates again.');
-                    end;
-            until (userTempTDateTimeFrom > now);
-
-            {Unos podataka o kraju rezervacije}
-            Write('Enter the reservation end date (YYYY-MM-DD): '); ReadLn(endDate);
-            y := StrToInt(Copy(endDate, 1, 4));
-            m := StrToInt(Copy(endDate, 6, 2));
-            d := StrToInt(Copy(endDate, 9, 2));
-            userTempTDateTimeTo := EncodeDate(y, m, d);
-        
-            if (userTempTDateTimeFrom >= userTempTDateTimeTo) then 
-            WriteLn('You cannot enter a reservation end date that is earlier than the start date. Please enter the dates again.');
-
-        until (userTempTDateTimeFrom < userTempTDateTimeTo);
-
-        {Upit za broj osoba}
-        repeat
-            Write('Number of guests: ');
-            ReadLn(guestsUI);
-            val(guestsUI, numberOfGuests, error);        
-        until (error = 0);
-
-        {ROOMS - sve sobe}
-          
-
-        writeln;
-        writeln;
-        writeln('Press <Enter> to go back'); ReadKey;
-        ClrScr;
+procedure SearchRooms(var roomsArray: TRoomArray; numberOfRooms: Integer;
+                      var reservationsArray: TReservationArray; numberOfReservations: Integer);
+var
+  startDateStr, endDateStr: string;
+  startDate, endDate: TDateTime;
+  y, m, d: Word;
+  numberOfGuests, error: Integer;
+  guestsStr: string;
+  i, j: Integer;
+  roomAvailable: Boolean;
+  resCheckIn, resCheckOut: TDateTime;
+  roomID: String;
+  roomIDInt: Integer;
+  roomCounter: Integer;
+begin
+  ClrScr;
+  roomCounter := 0;  
+  // Input and validate start and end date
+  repeat
+    // Input start date
+    repeat
+      Write('Enter reservation start date (YYYY-MM-DD): ');
+      ReadLn(startDateStr);
+ 
+      try
+        y := StrToInt(Copy(startDateStr, 1, 4));
+        m := StrToInt(Copy(startDateStr, 6, 2));
+        d := StrToInt(Copy(startDateStr, 9, 2));
+        startDate := EncodeDate(y, m, d);
+ 
+        if startDate < Date then
+          WriteLn('Error: Start date cannot be in the past.')
+        else
+          break;
+      except
+        WriteLn('Error: Invalid date format! Use YYYY-MM-DD.');
+      end;
+    until False;
+ 
+    // Input end date
+    repeat
+      Write('Enter reservation end date (YYYY-MM-DD): ');
+      ReadLn(endDateStr);
+ 
+      try
+        y := StrToInt(Copy(endDateStr, 1, 4));
+        m := StrToInt(Copy(endDateStr, 6, 2));
+        d := StrToInt(Copy(endDateStr, 9, 2));
+        endDate := EncodeDate(y, m, d);
+ 
+        if endDate <= startDate then
+          WriteLn('Error: End date must be after start date.')
+        else
+          break;
+      except
+        WriteLn('Error: Invalid date format! Use YYYY-MM-DD.');
+      end;
+    until False;
+  until True;
+ 
+  // Input number of guests (cannot be 0)
+  repeat
+    Write('Enter number of guests: ');
+    ReadLn(guestsStr);
+    Val(guestsStr, numberOfGuests, error);
+    if (error <> 0) or (numberOfGuests <= 0) then
+      WriteLn('Error: Enter a valid number greater than 0.')
+    else
+      break;
+  until False;
+ 
+  ClrScr;
+  WriteLn('*** AVAILABLE ROOMS ***');
+  WriteLn;
+ 
+  RenderRoomTableHeader;
+ 
+  // Loop through all rooms
+  for i := 1 to numberOfRooms do
+  begin
+    // Check if room has enough beds
+    if roomsArray[i].NumberOfBeds < numberOfGuests then
+      continue;
+ 
+    // Check availability for selected period
+    roomAvailable := True;
+ 
+    for j := 1 to numberOfReservations do
+    begin
+      if reservationsArray[j].RoomId = roomsArray[i].Id then
+      begin
+        // Parse reservation dates
+        y := StrToInt(Copy(reservationsArray[j].CheckIn, 1, 4));
+        m := StrToInt(Copy(reservationsArray[j].CheckIn, 6, 2));
+        d := StrToInt(Copy(reservationsArray[j].CheckIn, 9, 2));
+        resCheckIn := EncodeDate(y, m, d);
+ 
+        y := StrToInt(Copy(reservationsArray[j].CheckOut, 1, 4));
+        m := StrToInt(Copy(reservationsArray[j].CheckOut, 6, 2));
+        d := StrToInt(Copy(reservationsArray[j].CheckOut, 9, 2));
+        resCheckOut := EncodeDate(y, m, d);
+ 
+        // If periods overlap, room is not available
+        if not ((endDate < resCheckIn) or (startDate > resCheckOut)) then
+        begin
+          roomAvailable := False;
+          break;
+        end;
+      end;
     end;
+
+        // Display Room
+        if roomAvailable then
+            begin 
+                roomCounter := roomCounter + 1;
+                RenderRoomTable(roomsArray[i]);
+            end;
+    end;
+
+    if (roomCounter > 0) then 
+        begin 
+            TextColor(Green);
+            WriteLn('---------------------------------------------------------------------------------------');
+            Write('Choose the ID of the room you want to reserve, or "E" to go the previous menu: ');
+            ReadLn(roomID);
+            TextColor(White);
+            if LowerCase(RoomID) = 'e' then
+                begin
+                    writeln('Returning to previous menu...');
+                    ClrScr;
+                    delay(1000);
+                    exit;
+                end;
+            TextColor(White);
+            val(roomID, roomIDInt);
+            {Rezervacija Selektovane sobe}
+            Reserve(roomIDInt, roomsArray[roomIDInt], reservationsArray, numberOfReservations);
+        end
+    else 
+        begin 
+            ClrScr;
+            TextColor(Red);
+            writeln('No rooms available for the selected criteria. Press <Enter> to return to the previous menu.'); 
+            TextColor(White);
+            ReadKey;
+            writeln('Returning to previous menu...');
+            delay(1000);
+            ClrScr;
+            exit;
+        end; 
+end;
