@@ -343,10 +343,16 @@ begin
             WriteLn(Dat, ReserveRecordTemp.TotalPrice:0:2);
             writeln(Dat);
             CloseFile(Dat);
+            {Potvrda rezervacije}
             TextColor(Green);
             writeln('You have successfully reserved the room ', room.Name, ' from ', startDate, ' to ', endDate, '. Total price is $', ReserveRecordTemp.TotalPrice:0:2);
             TextColor(White);
-            end;
+            AssignFile(Dat, 'reservations.txt');
+            Reset(Dat);
+            CloseFile(Dat);
+            numberOfReservations := ReadReservations('reservations.txt', reservations);
+        end;
+            writeln;
             writeln('Press <Enter> to return to the previous menu.');
             ReadKey;
             ClrScr;
@@ -360,7 +366,7 @@ begin
 procedure UniversalSort(var roomsArray: TRoomArray; numberOfRooms: Integer; sortType: Integer; var reservationsArray: TReservationArray; numberOfReservations: Integer);
     var
     i: Integer;
-    roomID: Char;
+    roomID: String;
     roomIDInt: Integer;
     startTime, endTime: TDateTime;
     elapsedMS: Int64;
@@ -461,7 +467,7 @@ procedure UniversalFilter(var roomsArray: TRoomArray; numberOfRooms: Integer; fi
     var
         i: Integer;
         userOption: Integer;
-        roomID: Char;
+        roomID: String;
         roomIDInt: Integer;
         counter: Integer;
  
@@ -780,13 +786,16 @@ procedure Filter(var roomsArray: TRoomArray; numberOfRooms: Integer; var reserva
 function SearchReservations(roomsArray: TRoomArray; numberOfRooms: Integer; var reservationsArray: TReservationArray; numberOfReservations: Integer):TRoomArray;
 var
     personalID: String;
-    i: Integer;
+    i,j: Integer;
     ID: Char;
     IDInt: Integer;
     error: Integer;
     ReservationsToDelete: TReservationArray;
     ReservationsToCancel: TReservationArray;
+    DatReservations: Text;
+    DatCanceledReservations: Text; 
 begin
+    numberOfReservations := ReadReservations('reservations.txt', reservationsArray);
     error := 0;
     ClrScr;
     WriteLn('Please enter your Personal ID number: ');ReadLn(personalID);
@@ -824,16 +833,61 @@ begin
         begin
             write('Select ID of the reservation you want to cancel the reservation for');ReadLn(ID);
         end;
-
+    
+    AssignFile(DatReservations, 'reservations.txt');
+    AssignFile(DatCanceledReservations, 'canceled_reservations.txt');
+    
+    {Dodavanje u canceled_reservations.txt fajl}
     for i := 1 to numberOfReservations do
         begin
             if (reservationsArray[i].RoomId = IDInt) AND (reservationsArray[i].JMBG = personalID) then
                 begin
-                    writeln('You have successfully canceled your reservation for room ID ', reservationsArray[i].RoomId, ' from ', reservationsArray[i].CheckIn, ' to ', reservationsArray[i].CheckOut, '.');
-                end;
+                    {Dodavanje u cancelled_reservations.txt fajl}
+                    Append(DatCanceledReservations);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].JMBG);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].Name);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].Surname);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].RoomId);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].CheckIn);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].CheckOut);
+                    WriteLn(DatCanceledReservations, reservationsArray[i].TotalPrice:0:2);
+                    writeln(DatCanceledReservations);
+                    CloseFile(DatCanceledReservations);
+                end
         end;
 
-  
+    {Brisanje iz reservations niza i dodavanje opet u reservations.txt fajl}
+    for i := 1 to numberOfReservations do
+        begin
+            if ((reservationsArray[i].RoomId = IDInt) AND (reservationsArray[i].JMBG = personalID)) then
+                begin
+                    reservationsArray[i] := reservationsArray[i + 1]; 
+                    numberOfReservations := numberOfReservations - 1;
+                end;
+        end;
+    
+    {Brisemo staru datoteku i pravimo novu bez otkazane rezervacije}
+    Rewrite(DatReservations);
+    {Upisujemo sve rezervacije iz niza nazad u fajl, osim one koja je obrisana}
+    for j := 1 to (numberOfReservations) do
+        begin
+            WriteLn(DatReservations, reservationsArray[j].JMBG);
+            WriteLn(DatReservations, reservationsArray[j].Name);
+            WriteLn(DatReservations, reservationsArray[j].Surname);
+            WriteLn(DatReservations, reservationsArray[j].RoomId);
+            WriteLn(DatReservations, reservationsArray[j].CheckIn);
+            WriteLn(DatReservations, reservationsArray[j].CheckOut);    
+            WriteLn(DatReservations, reservationsArray[j].TotalPrice:0:2);
+            writeln(DatReservations);
+        end;
+     CloseFile(DatReservations);
+
+     numberOfReservations := ReadReservations('reservations.txt', reservationsArray);
+
+    writeln('Reservation successfully canceled. Press <Enter> to return to the previous menu.');
+    delay(1000);
+    ReadKey;
+    ClrScr;
 end;
 
 procedure SearchRooms(var roomsArray: TRoomArray; numberOfRooms: Integer;
@@ -851,6 +905,7 @@ var
   roomIDInt: Integer;
   roomCounter: Integer;
 begin
+  numberOfReservations := ReadReservations('reservations.txt', reservations);
   ClrScr;
   roomCounter := 0;  
   // Input and validate start and end date
